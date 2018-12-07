@@ -5,13 +5,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 
-
-"""Init: batch_size, input_size, hidden_size, bidirectional=True, batch_first=True"""
+"""Init: input_size, hidden_size, bidirectional=True, batch_first=True"""
 """Forward: vec_seq, len_seq"""
+
+
 class LSTM(nn.Module):
     def __init__(self, input_size, hidden_size, bidirectional=True, batch_first=True):
         super(LSTM, self).__init__()
-        self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, bidirectional=bidirectional, batch_first=batch_first)
+        self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, bidirectional=bidirectional,
+                            batch_first=batch_first)
         # self.hidden = self.init_hidden()
         #
         # self.batch_size = batch_size
@@ -48,4 +50,35 @@ class LSTM(nn.Module):
 
         return lstm_out
 
-class
+
+# class DependenceNet(nn.Module):
+#     def __init__(self, window_r, input_size, hidden_size, bidirectional=True, batch_first=True):
+#         super(DependenceNet, self).__init__()
+#         self.basic_lstm = LSTM(input_size=input_size, hidden_size=hidden_size,
+#                                bidirectional=bidirectional, batch_first=batch_first)
+#
+#     def forward(self):
+#         pass
+
+class Model(nn.Module):
+    def __init__(self, vocab_size, embedding_dim, fc_dim, input_size, hidden_size, tag_num = 4,
+                 bidirectional=True, batch_first=True, dropout=0.5):
+        super(Model, self).__init__()
+        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        self.basic_lstm = LSTM(input_size=input_size, hidden_size=hidden_size,
+                               bidirectional=bidirectional, batch_first=batch_first)
+
+        self.classifier = nn.Sequential(
+            nn.Linear(2 * hidden_size, fc_dim),
+            nn.Dropout(dropout),
+            nn.ReLU(),
+            nn.Linear(fc_dim, fc_dim),
+            nn.Dropout(dropout),
+            nn.ReLU(),
+            nn.Linear(fc_dim, tag_num)
+        )
+
+    def forward(self, text, tag):
+        embed = self.embedding(text)
+        score = self.classifier(embed)
+        return score

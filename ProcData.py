@@ -13,6 +13,7 @@ Middle = 1
 End = 2
 Single = 3
 
+
 def get_id(char):
     if char in character_dict:
         return character_dict[char]
@@ -20,6 +21,7 @@ def get_id(char):
         new_id = len(character_dict) + 1
         character_dict[char] = new_id
         return new_id
+
 
 for i, line in enumerate(file):
     if i % 10000 == 0:
