@@ -1,5 +1,6 @@
 data/
 .idea/
+checkpoint*/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

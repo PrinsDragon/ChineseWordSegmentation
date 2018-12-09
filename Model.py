@@ -40,7 +40,7 @@ class LSTM(nn.Module):
         len_seq = len_seq[index]
 
         # pack and pad
-        vec_seq = pack_padded_sequence(vec_seq, len_seq.data().numpy(), batch_first=True)
+        vec_seq = pack_padded_sequence(vec_seq, len_seq.data.numpy(), batch_first=True)
         lstm_out, _ = self.lstm(vec_seq)
         # lstm_out, self.hidden = self.lstm(vec_seq, self.hidden)
         lstm_out, _ = pad_packed_sequence(lstm_out, batch_first=True)
@@ -61,11 +61,11 @@ class LSTM(nn.Module):
 #         pass
 
 class Model(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, fc_dim, input_size, hidden_size, tag_num = 4,
+    def __init__(self, vocab_size, embedding_dim, fc_dim, hidden_size, tag_num=4,
                  bidirectional=True, batch_first=True, dropout=0.5):
         super(Model, self).__init__()
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
-        self.basic_lstm = LSTM(input_size=input_size, hidden_size=hidden_size,
+        self.basic_lstm = LSTM(input_size=embedding_dim, hidden_size=hidden_size,
                                bidirectional=bidirectional, batch_first=batch_first)
 
         self.classifier = nn.Sequential(
@@ -78,7 +78,8 @@ class Model(nn.Module):
             nn.Linear(fc_dim, tag_num)
         )
 
-    def forward(self, text, tag):
+    def forward(self, text, length):
         embed = self.embedding(text)
-        score = self.classifier(embed)
+        lstm_out = self.basic_lstm(embed, length)
+        score = self.classifier(lstm_out)
         return score
