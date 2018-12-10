@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.nn.init as init
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 
 """Init: input_size, hidden_size, bidirectional=True, batch_first=True"""
@@ -68,6 +69,8 @@ class Model(nn.Module):
         self.basic_lstm = LSTM(input_size=embedding_dim, hidden_size=hidden_size,
                                bidirectional=bidirectional, batch_first=batch_first)
 
+        self.basic_attention = BasicAttention(tensor_dim=2 * hidden_size)
+
         self.classifier = nn.Sequential(
             nn.Linear(2 * hidden_size, fc_dim),
             nn.Dropout(dropout),
@@ -81,5 +84,92 @@ class Model(nn.Module):
     def forward(self, text, length):
         embed = self.embedding(text)
         lstm_out = self.basic_lstm(embed, length)
-        score = self.classifier(lstm_out)
+
+        mask = build_mask(length)
+        attention_out = self.basic_attention(lstm_out, lstm_out, lstm_out, mask=mask)
+
+        score = self.classifier(attention_out)
         return score
+
+def build_mask(length):
+    batch_size = len(length)
+    max_length = max(length)
+    mask = torch.ones((batch_size, max_length, max_length)).byte().cuda()
+    for i, l in enumerate(length):
+        mask[i][: l, : l] = 0
+    return mask
+
+class BasicAttention(nn.Module):
+    def __init__(self, tensor_dim, dropout=0.1):
+        super(BasicAttention, self).__init__()
+        self.scale_constant = np.power(tensor_dim, 0.5)
+        self.dropout_layer = nn.Dropout(dropout)
+        self.softmax_layer = nn.Softmax(dim=2)
+
+    def forward(self, q, k, v, mask=None):
+        attention_matrix = q.bmm(k.transpose(1, 2)) / self.scale_constant
+
+        if mask is not None:
+            attention_matrix.masked_fill_(mask, -float('inf'))
+
+        attention_matrix = self.softmax_layer(attention_matrix)
+        attention_matrix = self.dropout_layer(attention_matrix)
+
+        output = attention_matrix.bmm(v)
+
+        return output
+
+# class ProjectAttention(nn.Module):
+#     def __init__(self, tensor_dim, k_dim, v_dim, dropout=0.1):
+#         super(ProjectAttention, self).__init__()
+#
+#         self.k_dim = k_dim
+#         self.v_dim = v_dim
+#
+#         self.w_qs = nn.Parameter(torch.FloatTensor(tensor_dim, k_dim))
+#         self.w_ks = nn.Parameter(torch.FloatTensor(tensor_dim, k_dim))
+#         self.w_vs = nn.Parameter(torch.FloatTensor(tensor_dim, v_dim))
+#
+#         self.basic_attention = BasicAttention(tensor_dim)
+#         self.norm = LayerNormalization(tensor_dim)
+#
+#         self.dropout_layer = nn.Dropout(dropout)
+#
+#         init.xavier_normal_(self.w_qs)
+#         init.xavier_normal_(self.w_ks)
+#         init.xavier_normal_(self.w_vs)
+#
+#     def forward(self, q, k, v, attention_mask=None):
+#
+#         res = q
+#
+#         multi_q = q.mm(self.w_qs)
+#         multi_k = k.mm(self.w_ks)
+#         multi_v = v.mm(self.w_vs)
+#
+#         attention_output = self.basic_attention(multi_q, multi_k, multi_v)
+#
+#         dropout_output = self.dropout_layer(attention_output)
+#
+#         return self.norm(dropout_output + res)
+#
+#
+# class LayerNormalization(nn.Module):
+#     def __init__(self, d_hid, eps=1e-3):
+#         super(LayerNormalization, self).__init__()
+#
+#         self.eps = eps
+#         self.a_2 = nn.Parameter(torch.ones(d_hid), requires_grad=True)
+#         self.b_2 = nn.Parameter(torch.zeros(d_hid), requires_grad=True)
+#
+#     def forward(self, z):
+#         if z.size(1) == 1:
+#             return z
+#
+#         mu = torch.mean(z, keepdim=True, dim=-1)
+#         sigma = torch.std(z, keepdim=True, dim=-1)
+#         ln_out = (z - mu.expand_as(z)) / (sigma.expand_as(z) + self.eps)
+#         ln_out = ln_out * self.a_2.expand_as(ln_out) + self.b_2.expand_as(ln_out)
+#
+#         return ln_out
+
