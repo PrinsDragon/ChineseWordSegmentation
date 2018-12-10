@@ -69,7 +69,7 @@ class Model(nn.Module):
         self.basic_lstm = LSTM(input_size=embedding_dim, hidden_size=hidden_size,
                                bidirectional=bidirectional, batch_first=batch_first)
 
-        self.basic_attention = BasicAttention(tensor_dim=2 * hidden_size)
+        # self.basic_attention = BasicAttention(tensor_dim=2 * hidden_size)
 
         self.classifier = nn.Sequential(
             nn.Linear(2 * hidden_size, fc_dim),
@@ -85,10 +85,12 @@ class Model(nn.Module):
         embed = self.embedding(text)
         lstm_out = self.basic_lstm(embed, length)
 
-        mask = build_mask(length)
-        attention_out = self.basic_attention(lstm_out, lstm_out, lstm_out, mask=mask)
+        # mask = build_mask(length)
+        # attention_out = self.basic_attention(lstm_out, lstm_out, lstm_out, mask=mask) + lstm_out
+        # score = self.classifier(attention_out)
 
-        score = self.classifier(attention_out)
+        score = self.classifier(lstm_out)
+
         return score
 
 def build_mask(length):

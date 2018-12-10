@@ -132,7 +132,7 @@ def save_model(epoch_id, train_acc, eval_acc):
 
 
 for i in range(epoch):
+    eval_acc = evaluate(i)
     train_acc = train(i)
     if (i + 1) % 5 == 0:
-        eval_acc = evaluate(i)
         save_model(i, train_acc, eval_acc)
