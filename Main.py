@@ -1,4 +1,5 @@
 import pickle
+import sys
 
 import torch
 import torch.nn as nn
@@ -142,6 +143,8 @@ def save_model(epoch_id, train_acc, eval_acc):
 
 for i in range(epoch):
     eval_acc = evaluate(i)
+    sys.stdout.flush()
     train_acc = train(i)
+    sys.stdout.flush()
     if (i + 1) % 5 == 0:
         save_model(i, train_acc, 0)
