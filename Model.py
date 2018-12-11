@@ -6,6 +6,9 @@ import torch.nn.functional as F
 import torch.nn.init as init
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 
+from CRF import CRF
+
+
 """Init: input_size, hidden_size, bidirectional=True, batch_first=True"""
 """Forward: vec_seq, len_seq"""
 
@@ -69,7 +72,7 @@ class Model(nn.Module):
         self.basic_lstm = LSTM(input_size=embedding_dim, hidden_size=hidden_size,
                                bidirectional=bidirectional, batch_first=batch_first)
 
-        # self.basic_attention = BasicAttention(tensor_dim=2 * hidden_size)
+        # self.CRF = CRF(tag_num)
 
         self.classifier = nn.Sequential(
             nn.Linear(2 * hidden_size, fc_dim),
@@ -81,7 +84,7 @@ class Model(nn.Module):
             nn.Linear(fc_dim, tag_num)
         )
 
-    def forward(self, text, length):
+    def forward(self, text, length, tag):
         embed = self.embedding(text)
         lstm_out = self.basic_lstm(embed, length)
 
@@ -91,15 +94,26 @@ class Model(nn.Module):
 
         score = self.classifier(lstm_out)
 
+        # score = score.transpose(0, 1)
+        # tag = tag[:, :max(length)].transpose(0, 1)
+        # mask = build_mask(length)
+        #
+        # llh = self.CRF(score, tag, mask=mask, reduce=False)
+
         return score
 
 def build_mask(length):
     batch_size = len(length)
     max_length = max(length)
-    mask = torch.ones((batch_size, max_length, max_length)).byte().cuda()
+    # mask = torch.ones((batch_size, max_length, max_length)).byte().cuda()
+    # for i, l in enumerate(length):
+    #     mask[i][: l, : l] = 0
+    # return mask
+    mask = torch.zeros(max_length, batch_size).cuda()
     for i, l in enumerate(length):
-        mask[i][: l, : l] = 0
+        mask[:l, i] = 1
     return mask
+
 
 class BasicAttention(nn.Module):
     def __init__(self, tensor_dim, dropout=0.1):
