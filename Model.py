@@ -72,7 +72,7 @@ class Model(nn.Module):
         self.basic_lstm = LSTM(input_size=embedding_dim, hidden_size=hidden_size,
                                bidirectional=bidirectional, batch_first=batch_first)
 
-        # self.CRF = CRF(tag_num)
+        self.CRF = CRF(tag_num)
 
         self.classifier = nn.Sequential(
             nn.Linear(2 * hidden_size, fc_dim),
@@ -94,13 +94,14 @@ class Model(nn.Module):
 
         score = self.classifier(lstm_out)
 
-        # score = score.transpose(0, 1)
-        # tag = tag[:, :max(length)].transpose(0, 1)
-        # mask = build_mask(length)
-        #
-        # llh = self.CRF(score, tag, mask=mask, reduce=False)
+        score = score.transpose(0, 1)
+        tag = tag[:, :max(length)].transpose(0, 1)
+        mask = build_mask(length)
 
-        return score
+        llh = self.CRF(score, tag, mask=mask)
+        predict = self.CRF.decode(score, mask=mask)
+
+        return llh, predict
 
 def build_mask(length):
     batch_size = len(length)

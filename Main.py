@@ -68,24 +68,34 @@ def train(epoch_id):
 
         optimizer.zero_grad()
 
-        score = model(text_batch, length_batch)
+        loss, predict = model(text_batch, length_batch, tag_batch)
 
-        loss = 0.
         correct_num = 0.
+
         for i in range(batch_size):
             cur_length = int(length_batch[i])
-            cur_score = score[i][:cur_length]
             cur_tag = tag_batch[i][:cur_length]
-            cur_predict = cur_score.max(1)[1]
-            loss += loss_func(cur_score, cur_tag)
-            correct_num += (cur_predict == cur_tag).sum()
+            cur_tag = [int(t) for t in cur_tag]
+            cur_predict = predict[i]
+            correct_num += sum([1 if t == p else 0 for (t, p) in zip(cur_tag, cur_predict)])
             word_num += cur_length
+
+        # loss = 0.
+        # correct_num = 0.
+        # for i in range(batch_size):
+        #     cur_length = int(length_batch[i])
+        #     cur_score = score[i][:cur_length]
+        #     cur_tag = tag_batch[i][:cur_length]
+        #     cur_predict = cur_score.max(1)[1]
+        #     loss += loss_func(cur_score, cur_tag)
+        #     correct_num += (cur_predict == cur_tag).sum()
+        #     word_num += cur_length
 
         loss.backward()
         optimizer.step()
 
         running_loss += loss.data
-        running_acc += correct_num.float().data
+        running_acc += correct_num
 
     running_loss /= word_num
     running_acc /= word_num
@@ -103,7 +113,7 @@ def evaluate(epoch_id):
         length_batch = batch[1].view(-1)
         tag_batch = batch[2].cuda()
 
-        score = model(text_batch, length_batch)
+        score = model(text_batch, length_batch, tag_batch)
 
         loss = 0.
         correct_num = 0.
@@ -135,4 +145,4 @@ for i in range(epoch):
     # eval_acc = evaluate(i)
     train_acc = train(i)
     if (i + 1) % 5 == 0:
-        save_model(i, train_acc, eval_acc)
+        save_model(i, train_acc, 0)
