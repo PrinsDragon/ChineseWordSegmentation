@@ -55,10 +55,14 @@ class LSTM(nn.Module):
         return lstm_out
 
 class Model(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, fc_dim, hidden_size, tag_num=4,
+    def __init__(self, vocab_size, embedding_dim, fc_dim, hidden_size, word_vec_matrix=None, tag_num=4,
                  bidirectional=True, batch_first=True, dropout=0.5):
         super(Model, self).__init__()
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
+
+        if word_vec_matrix is not None:
+            self.embedding.weight.data.copy_(torch.from_numpy(word_vec_matrix))
+
         self.basic_lstm = LSTM(input_size=embedding_dim, hidden_size=hidden_size,
                                bidirectional=bidirectional, batch_first=batch_first)
 

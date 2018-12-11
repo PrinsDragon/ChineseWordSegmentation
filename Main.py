@@ -8,18 +8,20 @@ from torch.utils.data import Dataset, DataLoader
 from Model import Model
 
 dict_file = open("data/proc/dict.pl", "rb")
+matrix_file = open("data/proc/matrix.pl", "rb")
 text_file = [open("data/proc/train/text.pl", "rb"), open("data/proc/test/text.pl", "rb")]
 tag_file = [open("data/proc/train/tag.pl", "rb"), open("data/proc/test/tag.pl", "rb")]
 len_file = [open("data/proc/train/len.pl", "rb"), open("data/proc/test/len.pl", "rb")]
 
 word_dict = pickle.load(dict_file)
+word_matrix = pickle.load(matrix_file)
 text = [pickle.load(text_file[0]), pickle.load(text_file[1])]
 tag = [pickle.load(tag_file[0]), pickle.load(tag_file[1])]
 length = [pickle.load(len_file[0]), pickle.load(len_file[1])]
 
 epoch = 50
 batch_size = 100
-vocabulary_size = len(word_dict)
+vocabulary_size = len(word_dict)+1
 embedding_dim = 128
 fc_dim = 512
 hidden_size = 128
@@ -49,7 +51,8 @@ train_data_loader = DataLoader(train_data_set, batch_size=batch_size, shuffle=Tr
 test_data_set = TextDataset(text[1], tag[1], length[1])
 test_data_loader = DataLoader(test_data_set, batch_size=batch_size, shuffle=True, drop_last=True)
 
-model = Model(vocab_size=vocabulary_size, embedding_dim=embedding_dim, fc_dim=fc_dim, hidden_size=hidden_size).cuda()
+model = Model(vocab_size=vocabulary_size, embedding_dim=embedding_dim, fc_dim=fc_dim, hidden_size=hidden_size,
+              word_vec_matrix=word_matrix).cuda()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 loss_func = nn.CrossEntropyLoss(reduce=True, size_average=False)
 

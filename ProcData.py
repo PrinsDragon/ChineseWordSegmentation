@@ -1,4 +1,6 @@
 import pickle
+import numpy as np
+from gensim.models import Word2Vec
 
 def get_id(char):
     if char in character_dict:
@@ -25,6 +27,7 @@ def proc_line(line):
 def proc_file(file_name):
     path = "data/{}.txt".format(file_name)
     file = open(path, "r", encoding="utf-8")
+    text_list_str = []
     text_list = []
     tag_list = []
 
@@ -35,6 +38,7 @@ def proc_file(file_name):
         line = line[: -1]
         part_list = line.split("  ")
 
+        now_text_str = []
         now_text = []
         now_tag = []
         for part in part_list:
@@ -42,18 +46,25 @@ def proc_file(file_name):
             if part_len == 0:
                 continue
             if part_len == 1:
+                now_text_str.append(part)
                 now_text.append(get_id(part))
                 now_tag.append(Single)
             else:
+                now_text_str.append(part[0])
                 now_text.append(get_id(part[0]))
                 now_tag.append(Begin)
                 for j in range(1, part_len - 1):
+                    now_text_str.append(part[j])
                     now_text.append(get_id(part[j]))
                     now_tag.append(Middle)
+                now_text_str.append(part[-1])
                 now_text.append(get_id(part[-1]))
                 now_tag.append(End)
+        text_list_str.append(now_text_str)
         text_list.append(now_text)
         tag_list.append(now_tag)
+
+    model = Word2Vec(text_list_str, min_count=1, size=128)
 
     text_list, len_list = data_padding(text_list)
     tag_list, _ = data_padding(tag_list)
@@ -66,6 +77,8 @@ def proc_file(file_name):
     pickle.dump(tag_list, tag_file)
     pickle.dump(len_list, len_file)
 
+    return model
+
 if __name__ == "__main__":
     # tag:
     # {B:begin, M:middle, E:end, S:single}
@@ -76,9 +89,23 @@ if __name__ == "__main__":
 
     character_dict = {}
 
-    proc_file("train")
-    proc_file("test")
+    train_model = proc_file("train")
+    test_model = proc_file("test")
 
+    word_num = len(character_dict)
+    word_vec_dim = 128
+    word_vec_matrix = 0.5 * np.random.random_sample((word_num + 1, word_vec_dim)) - 0.25
+
+    for word in character_dict:
+        cur_id = character_dict[word]
+        if word in train_model.wv:
+            cur_vec = train_model.wv[word]
+        else:
+            cur_vec = test_model.wv[word]
+        word_vec_matrix[cur_id] = cur_vec
+
+    matrix_file = open("data/proc/matrix.pl", "wb")
+    pickle.dump(word_vec_matrix, matrix_file)
     dict_file = open("data/proc/dict.pl", "wb")
     pickle.dump(character_dict, dict_file)
 
