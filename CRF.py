@@ -3,6 +3,17 @@ from typing import List, Optional
 import torch
 import torch.nn as nn
 
+def build_mask(length):
+    batch_size = len(length)
+    max_length = max(length)
+    # mask = torch.ones((batch_size, max_length, max_length)).byte().cuda()
+    # for i, l in enumerate(length):
+    #     mask[i][: l, : l] = 0
+    # return mask
+    mask = torch.zeros(max_length, batch_size).cuda()
+    for i, l in enumerate(length):
+        mask[:l, i] = 1
+    return mask
 
 class CRF(nn.Module):
     """Conditional random field.

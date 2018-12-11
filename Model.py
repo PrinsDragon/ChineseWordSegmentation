@@ -54,16 +54,6 @@ class LSTM(nn.Module):
 
         return lstm_out
 
-
-# class DependenceNet(nn.Module):
-#     def __init__(self, window_r, input_size, hidden_size, bidirectional=True, batch_first=True):
-#         super(DependenceNet, self).__init__()
-#         self.basic_lstm = LSTM(input_size=input_size, hidden_size=hidden_size,
-#                                bidirectional=bidirectional, batch_first=batch_first)
-#
-#     def forward(self):
-#         pass
-
 class Model(nn.Module):
     def __init__(self, vocab_size, embedding_dim, fc_dim, hidden_size, tag_num=4,
                  bidirectional=True, batch_first=True, dropout=0.5):
@@ -84,56 +74,33 @@ class Model(nn.Module):
             nn.Linear(fc_dim, tag_num)
         )
 
-    def forward(self, text, length, tag):
+    def forward(self, text, length):
         embed = self.embedding(text)
         lstm_out = self.basic_lstm(embed, length)
 
-        # mask = build_mask(length)
-        # attention_out = self.basic_attention(lstm_out, lstm_out, lstm_out, mask=mask) + lstm_out
-        # score = self.classifier(attention_out)
-
         score = self.classifier(lstm_out)
-
-        # score = score.transpose(0, 1)
-        # tag = tag[:, :max(length)].transpose(0, 1)
-        # mask = build_mask(length)
-        #
-        # llh = self.CRF(score, tag, mask=mask, reduce=False)
 
         return score
 
-def build_mask(length):
-    batch_size = len(length)
-    max_length = max(length)
-    # mask = torch.ones((batch_size, max_length, max_length)).byte().cuda()
-    # for i, l in enumerate(length):
-    #     mask[i][: l, : l] = 0
-    # return mask
-    mask = torch.zeros(max_length, batch_size).cuda()
-    for i, l in enumerate(length):
-        mask[:l, i] = 1
-    return mask
-
-
-class BasicAttention(nn.Module):
-    def __init__(self, tensor_dim, dropout=0.1):
-        super(BasicAttention, self).__init__()
-        self.scale_constant = np.power(tensor_dim, 0.5)
-        self.dropout_layer = nn.Dropout(dropout)
-        self.softmax_layer = nn.Softmax(dim=2)
-
-    def forward(self, q, k, v, mask=None):
-        attention_matrix = q.bmm(k.transpose(1, 2)) / self.scale_constant
-
-        if mask is not None:
-            attention_matrix.masked_fill_(mask, -float('inf'))
-
-        attention_matrix = self.softmax_layer(attention_matrix)
-        attention_matrix = self.dropout_layer(attention_matrix)
-
-        output = attention_matrix.bmm(v)
-
-        return output
+# class BasicAttention(nn.Module):
+#     def __init__(self, tensor_dim, dropout=0.1):
+#         super(BasicAttention, self).__init__()
+#         self.scale_constant = np.power(tensor_dim, 0.5)
+#         self.dropout_layer = nn.Dropout(dropout)
+#         self.softmax_layer = nn.Softmax(dim=2)
+#
+#     def forward(self, q, k, v, mask=None):
+#         attention_matrix = q.bmm(k.transpose(1, 2)) / self.scale_constant
+#
+#         if mask is not None:
+#             attention_matrix.masked_fill_(mask, -float('inf'))
+#
+#         attention_matrix = self.softmax_layer(attention_matrix)
+#         attention_matrix = self.dropout_layer(attention_matrix)
+#
+#         output = attention_matrix.bmm(v)
+#
+#         return output
 
 # class ProjectAttention(nn.Module):
 #     def __init__(self, tensor_dim, k_dim, v_dim, dropout=0.1):
