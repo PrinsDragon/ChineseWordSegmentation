@@ -1,5 +1,6 @@
 import pickle
-import numpy as np
+import torch
+import torch.nn.init as init
 from gensim.models import Word2Vec
 
 def get_id(char):
@@ -94,15 +95,14 @@ if __name__ == "__main__":
 
     word_num = len(character_dict)
     word_vec_dim = 128
-    word_vec_matrix = 0.5 * np.random.random_sample((word_num + 1, word_vec_dim)) - 0.25
+    word_vec_matrix = torch.zeros((word_num, word_vec_dim))
+    init.xavier_normal_(word_vec_matrix)
 
     for word in character_dict:
         cur_id = character_dict[word]
         if word in train_model.wv:
             cur_vec = train_model.wv[word]
-        else:
-            cur_vec = test_model.wv[word]
-        word_vec_matrix[cur_id] = cur_vec
+            word_vec_matrix[cur_id] = torch.Tensor(cur_vec)
 
     matrix_file = open("data/proc/matrix.pl", "wb")
     pickle.dump(word_vec_matrix, matrix_file)

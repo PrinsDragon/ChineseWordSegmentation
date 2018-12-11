@@ -61,7 +61,7 @@ class Model(nn.Module):
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
 
         if word_vec_matrix is not None:
-            self.embedding.weight.data.copy_(torch.from_numpy(word_vec_matrix))
+            self.embedding.weight.data.copy_(word_vec_matrix)
 
         self.basic_lstm = LSTM(input_size=embedding_dim, hidden_size=hidden_size,
                                bidirectional=bidirectional, batch_first=batch_first)

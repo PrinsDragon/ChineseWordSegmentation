@@ -21,7 +21,7 @@ length = [pickle.load(len_file[0]), pickle.load(len_file[1])]
 
 epoch = 50
 batch_size = 100
-vocabulary_size = len(word_dict)+1
+vocabulary_size = len(word_dict)
 embedding_dim = 128
 fc_dim = 512
 hidden_size = 128
