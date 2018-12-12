@@ -29,6 +29,7 @@ hidden_size = 128
 
 class TextDataset(Dataset):
     def __init__(self, text_, tag_, length_):
+        super(TextDataset, self).__init__()
         self.text = text_
         self.tag = tag_
         self.len_list = length_
