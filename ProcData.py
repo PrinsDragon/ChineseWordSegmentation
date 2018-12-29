@@ -7,16 +7,16 @@ def get_id(char):
     if char in character_dict:
         return character_dict[char]
     else:
-        new_id = len(character_dict) + 1
+        new_id = len(character_dict)
         character_dict[char] = new_id
         return new_id
 
-def data_padding(seq):
+def data_padding(seq, pad_element=0):
     len_list = [len(s) for s in seq]
     max_len = max(len_list)
     for i in range(len(seq)):
         cur_len = len(seq[i])
-        pad = [0 for _ in range(max_len-cur_len)]
+        pad = [pad_element for _ in range(max_len-cur_len)]
         seq[i] = seq[i] + pad
     return seq, len_list
 
@@ -67,8 +67,8 @@ def proc_file(file_name):
 
     model = Word2Vec(text_list_str, min_count=1, size=128)
 
-    text_list, len_list = data_padding(text_list)
-    tag_list, _ = data_padding(tag_list)
+    text_list, len_list = data_padding(text_list, pad_element=PAD_word)
+    tag_list, _ = data_padding(tag_list, pad_element=PAD_tag)
 
     text_file = open("data/proc/{}/text.pl".format(file_name), "wb")
     tag_file = open("data/proc/{}/tag.pl".format(file_name), "wb")
@@ -81,14 +81,19 @@ def proc_file(file_name):
     return model
 
 if __name__ == "__main__":
+    PAD_word = 0
+
     # tag:
     # {B:begin, M:middle, E:end, S:single}
     Begin = 0
     Middle = 1
     End = 2
     Single = 3
+    SOS = 4
+    EOS = 5
+    PAD_tag = 0
 
-    character_dict = {}
+    character_dict = {"PAD": PAD_word}
 
     train_model = proc_file("train")
     test_model = proc_file("test")
