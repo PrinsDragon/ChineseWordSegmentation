@@ -9,7 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 
 from Model import Model
 
-checkpoint_path = "checkpoint_12-8/EPOCH_45_model.pkl"
+checkpoint_path = "checkpoint_12-8/EPOCH_5_model.pkl"
 
 dict_file = open("data/proc/dict.pl", "rb")
 text_file = open("data/proc/test/text.pl", "rb")

@@ -36,6 +36,9 @@ def proc_file(file_name):
         if i % 10000 == 0:
             print("{} lines finish...".format(i))
 
+        if len(line) == 0:
+            continue
+
         line = line[: -1]
         part_list = line.split("  ")
 
